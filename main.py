@@ -10,34 +10,28 @@ __license__ = "MIT"
 import cv2
 import sys
 import imageio
+import face_recognition
 import subprocess
 from PIL import Image
 
 def get_face_rect(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    face_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-    faces = face_cascade.detectMultiScale(
-        gray,
-        scaleFactor=1.3,
-        minNeighbors=3,
-        minSize=(30, 30)
-    )
+    faces = face_recognition.face_locations(image)
     if len(faces):
         return faces[0]
     else:
         raise Exception('No faces have been detected')
 
-def create_frames(cv2_image):
-    pil_image = Image.fromarray(cv2.cvtColor(cv2_image,cv2.COLOR_BGR2RGB))
+def create_frames(image):
+    print(image)
+    pil_image = Image.fromarray(image)
     frames = []
-    for i in range(7):
-        frames.append(pil_image.rotate(i*45))
+    for i in range(5):
+        frames.append(pil_image.rotate(i*60))
     return frames
 
-def create_gif(cv2_image):
+def create_gif(image):
     path = 'res.gif'
-    frames = create_frames(cv2_image)
+    frames = create_frames(image)
     frames[0].save(path, format='GIF', append_images=frames[1:], save_all=True, duration=100, loop=0)
     return path
 
@@ -53,11 +47,11 @@ def main():
     
     print(image_path)
  
-    image = cv2.imread(image_path)
-    (x, y, w, h) = get_face_rect(image)
-    cropped = image [y:y+h, x:x+h]
+    image = face_recognition.load_image_file(image_path)
+    top, right, bottom, left = get_face_rect(image)
+    cropped = image[top:bottom, left:right]
     path = create_gif(cropped)
-    get_optimized_gif(path)
+    #get_optimized_gif(path)
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """
