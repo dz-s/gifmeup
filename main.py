@@ -8,18 +8,30 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 import cv2
+import dlib 
+import numpy as np
+import skimage.draw
 import sys
-import imageio
-import face_recognition
 import subprocess
+
 from PIL import Image
 
-def get_face_rect(image):
-    faces = face_recognition.face_locations(image)
-    if len(faces):
-        return faces[0]
-    else:
-        raise Exception('No faces have been detected')
+def get_face_img(image_path):
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+
+    img = dlib.load_rgb_image(image_path)
+    rect = detector(img)[0]
+    sp = predictor(img, rect)
+    landmarks = np.array([[p.x, p.y] for p in sp.parts()])
+
+    outline = landmarks[[*range(17), *range(26,16,-1)]]
+
+    Y, X = skimage.draw.polygon(outline[:,1], outline[:,0])
+
+    cropped_img = np.zeros(img.shape, dtype=np.uint8)
+    cropped_img[Y, X] = img[Y, X]
+    return cropped_img
 
 def create_frames(image):
     print(image)
@@ -46,10 +58,8 @@ def main():
         raise Exception('No path has been provided')
     
     print(image_path)
- 
-    image = face_recognition.load_image_file(image_path)
-    top, right, bottom, left = get_face_rect(image)
-    cropped = image[top:bottom, left:right]
+
+    cropped = get_face_img(image_path)
     path = create_gif(cropped)
     #get_optimized_gif(path)
 
